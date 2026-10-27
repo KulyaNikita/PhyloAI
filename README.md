@@ -32,7 +32,7 @@ channels are explicitly excluded. This does not change individual software
 or model licenses.
 
 ```bash
-git clone --branch phyloai-protein --single-branch https://github.com/KulyaNikita/PhyloAI.git
+git clone https://github.com/KulyaNikita/PhyloAI.git
 cd PhyloAI
 bash install.sh
 conda activate phyloAI
