@@ -27,9 +27,6 @@ IQ-TREE runtime increases strongly with alignment lengths. For the 100,000 long 
 ## Installation
 
 Use Miniforge (recommended) or another conda installation, with Git available.
-Installation uses only `conda-forge` and `bioconda`; Anaconda's `defaults`
-channels are explicitly excluded. This does not change individual software
-or model licenses.
 
 ```bash
 git clone https://github.com/KulyaNikita/PhyloAI.git
