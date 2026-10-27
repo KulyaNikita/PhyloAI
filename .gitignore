@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.o
+*.egg-info/
+build/
+dist/
+/PolyMoSim/
+/ModelDetector.h5
+/PhyloAI-TA-LA-Kaggle/
+/PhyloAI-Fisher-Kaggle/
