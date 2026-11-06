@@ -53,10 +53,10 @@ if not shutil.which("astral") or not shutil.which("java"):
 '
 # Compile for the selected interpreter and install in that environment.
 "${PYTHON_CMD[@]}" -m pip install --no-deps --no-build-isolation \
-    "$REPO_PATH/quartet-pattern-counter-v.1.6"
+    "$REPO_PATH/quartet-pattern-counter-v.1.7.1"
 "${PYTHON_CMD[@]}" -c '
 import QuartetPatternCounterModule as qpc
-if getattr(qpc, "__version__", None) != "1.6.1":
+if getattr(qpc, "__version__", None) != "1.7.1":
     raise SystemExit("Another QPC shadows this installation: " + str(qpc.__file__) +
                      ". Remove old QPC directories from PYTHONPATH or the working directory.")
 assert qpc.AA_PATTERN_ORDER == "ACDEFGHIKLMNPQRSTVWY"

@@ -265,8 +265,8 @@ def run(args):
     from additional_scripts.run_analysis_on_test_datasets_aa import load_network, prepare_features, validate_network_inputs, predict
     tf.config.threading.set_intra_op_parallelism_threads(args.threads)
     tf.config.threading.set_inter_op_parallelism_threads(1)
-    if getattr(qpc, 'AA_PATTERN_ORDER', None) != AA_ORDER or getattr(qpc, '__version__', None) != '1.6.1':
-        raise RuntimeError(f'Requires project QPC 1.6.1; found {qpc.__file__}. Run install.sh and remove old PYTHONPATH entries.')
+    if getattr(qpc, 'AA_PATTERN_ORDER', None) != AA_ORDER or getattr(qpc, '__version__', None) != '1.7.1':
+        raise RuntimeError(f'Requires project QPC 1.7.1; found {qpc.__file__}. Run install.sh and remove old PYTHONPATH entries.')
     if args.substitution_model is None and not args.detector.is_file():
         raise FileNotFoundError(f'ModelDetector not found: {args.detector}; run install.sh or use --detector')
     methods = ['astral', 'qfm', 'astraq', 'astraqw'] if args.method == 'all' else [args.method]

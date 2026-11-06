@@ -11,7 +11,7 @@ the simulated-data benchmark is in this directory.
 - `run_analysis_on_test_datasets_aa.py`: simulated-data benchmark; see the example below.
 - `pca_plot_variance_explanation.py`: plot cumulative variance from a fitted PCA model: `python additional_scripts/pca_plot_variance_explanation.py model.pkl LG`.
 - `how_much_variances_explained_by_first_8_components.py`: fit PCA-8 to a frequency array and report retained variance: `python additional_scripts/how_much_variances_explained_by_first_8_components.py frequencies.npy`. This historical utility loads the array into RAM; provide frequencies without an appended length column.
-- `quartet-pattern-counter-v.1.4/` and `quartet-pattern-counter-v.1.5/`: historical sources, not installed by the current installer.
+- `quartet-pattern-counter-v.1.4/`, `quartet-pattern-counter-v.1.5/`, and `quartet-pattern-counter-v.1.6/`: historical sources, not installed by the current installer.
 
 The simulation test runner is `additional_scripts/run_analysis_on_test_datasets_aa.py`.
 `simulate_training_data.py` and `train_phyloai.py` remain in the project root.
@@ -197,10 +197,10 @@ creating another copy. Supply raw, untransformed lengths as before.
 
 `run_analysis_on_test_datasets_aa.py` is the amino-acid quartet benchmark used
 for the simulation comparisons.  It simulates each of the three quartet topologies with PolyMoSim, counts
-site-pattern frequencies with QPC 1.6, and evaluates the supplied networks.
+site-pattern frequencies with QPC 1.7.1, and evaluates the supplied networks.
 It supports TA/Fisher selectors, PCA/GRP/SRP reducers, raw-pattern networks,
 and Dayhoff/SR/KGB 6-state models, with model-specific length inputs when
-required. QPC 1.6 frequencies already follow the training pattern order;
+required. QPC 1.7.1 frequencies already follow the training pattern order;
 no order conversion is performed. The included
 `recode_aa_frequencies_6state.py` supplies the 6-state recoding functions.
 

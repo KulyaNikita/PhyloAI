@@ -5,7 +5,7 @@ The runner supports raw 20-state DeepNNPhylogeny networks, PCA/GRP/SRP,
 Fisher-selected Fisher-selected networks, length-aware PCA networks, and
 Dayhoff/SR/KGB 6-state networks with or without alignment length.
 Quartet frequencies and effective lengths are read in memory with
-Quartet-Pattern-Counter 1.6. QPC 1.6 emits amino-acid site patterns in
+Quartet-Pattern-Counter 1.7.1. QPC 1.7.1 emits amino-acid site patterns in
 the same alphabetical order used to train the PolyMoSim-based models.
 
 For completely unambiguous model discovery, put ``model_manifest.json`` in
@@ -112,7 +112,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--bootstrap-replicates", type=int, default=None,
                    help="bootstrap replicates; default 100, or 0 with --latest-fisher-only")
     p.add_argument("--processes", type=int, default=1,
-                   help="threads for Quartet-Pattern-Counter 1.6")
+                   help="threads for Quartet-Pattern-Counter 1.7.1")
     p.add_argument("--seed", type=int, default=13)
     p.add_argument("--output-root", type=Path, default=Path("aa_analysis_results"))
     p.add_argument("--run-name", help="stable output directory name; timestamp is used otherwise")
@@ -126,7 +126,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--iqtree-only", action="store_true",
                    help="evaluate only IQ-TREE on simulated quartets; do not load or evaluate networks")
     p.add_argument("--counter-dir", type=Path,
-                   default=PROJECT_ROOT / "quartet-pattern-counter-v.1.6")
+                   default=PROJECT_ROOT / "quartet-pattern-counter-v.1.7.1")
     p.add_argument("--alignments", type=Path,
                    help="instead of simulation, use FASTA files below this directory; names must contain top0/top1/top2")
     p.add_argument("--save-features", action="store_true",
@@ -456,12 +456,16 @@ def discover_specs(folder: Path, latest_fisher_only: bool = False,
 def import_counter(counter_dir: Path) -> Any:
     counter_dir = counter_dir.resolve()
     if re.search(r"v\.?1\.5(?:\D|$)", counter_dir.name, re.IGNORECASE):
-        raise RuntimeError("QPC 1.5 emits the old amino-acid pattern order. This runner requires QPC 1.6; compile it in the cluster environment and update --counter-dir.")
+        raise RuntimeError("QPC 1.5 emits the old amino-acid pattern order. This runner requires QPC 1.7.1; compile it in the cluster environment and update --counter-dir.")
     sys.path.insert(0, str(counter_dir))
     try:
-        return importlib.import_module("QuartetPatternCounterModule")
+        counter = importlib.import_module("QuartetPatternCounterModule")
     except ImportError as exc:
-        raise RuntimeError(f"Cannot import Quartet-Pattern-Counter 1.6 from {counter_dir}. The extension must match this Python version.") from exc
+        raise RuntimeError(f"Cannot import Quartet-Pattern-Counter 1.7.1 from {counter_dir}. The extension must match this Python version.") from exc
+    if (getattr(counter, '__version__', None) != '1.7.1'
+            or getattr(counter, 'AA_PATTERN_ORDER', None) != POLYMOSIM_AA_ORDER):
+        raise RuntimeError(f'Requires project QPC 1.7.1 in training pattern order; found {counter.__file__}. Rebuild QPC and remove old PYTHONPATH entries.')
+    return counter
 
 
 def count_alignment(path: Path, counter_module: Any, threads: int, verbose: int = 0) -> tuple[np.ndarray, np.ndarray]:
@@ -648,7 +652,7 @@ def prepare_features(spec: ModelSpec, raw: np.ndarray, lengths: np.ndarray,
                      reducer: Any | None) -> tuple[Any, tuple[int, ...]]:
     x = raw
     if spec.kind == "6state":
-        # QPC 1.6 already emits the PolyMoSim training order; index the
+        # QPC 1.7.1 already emits the PolyMoSim training order; index the
         # six-state groups in that same order without rearranging features.
         x = recode_batch(
             np.asarray(raw, dtype=np.float32),
@@ -825,7 +829,7 @@ def find_completed_run(args: argparse.Namespace, specs: list[ModelSpec]) -> Path
                    (Path(getattr(args, key)).resolve() if getattr(args, key) else None)
                    for key in ("models", "counter_dir", "alignments")):
                 continue
-            if config.get("feature_order_conversion") != "none_QPC_1.6_matches_PolyMoSim":
+            if config.get("feature_order_conversion") != "none_QPC_1.7.1_matches_PolyMoSim":
                 continue
             if json.loads((folder / "model_inventory.json").read_text()) != expected:
                 continue
@@ -875,10 +879,10 @@ def run(args: argparse.Namespace) -> Path:
     config = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
     config.update({"run_name": run_name, "started_utc": started.isoformat(), "schema_version": 2,
                    "runner_version": RUNNER_VERSION,
-                   "topology_labels": dict(enumerate(TOPOLOGY_NAMES)), "counter_version": "1.6",
+                   "topology_labels": dict(enumerate(TOPOLOGY_NAMES)), "counter_version": "1.7.1",
                    "qpc_amino_acid_order": QPC_AA_ORDER,
                    "model_feature_amino_acid_order": POLYMOSIM_AA_ORDER,
-                   "feature_order_conversion": "none_QPC_1.6_matches_PolyMoSim"})
+                   "feature_order_conversion": "none_QPC_1.7.1_matches_PolyMoSim"})
     (output / "config.json").write_text(json.dumps(config, indent=2, sort_keys=True) + "\n")
     if args.inventory_only:
         output.rename(final_output)

@@ -35,7 +35,7 @@ bash install.sh
 conda activate phyloAI
 ```
 
-The installer prepares the environment, installs QPC, ModelDetector, ASTRAL,
+The installer prepares the environment, installs QPC v1.7.1, ModelDetector, ASTRAL,
 QFM-FI and ASTRAQ, and builds PolyMoSim. It also downloads 15 Fisher and three six-state-LA pretrained
 [PhyloAI protein models on Kaggle](https://www.kaggle.com/models/nikitakulya/phyloai-protein)
 into `PhyloAI-Fisher-Kaggle/`.
