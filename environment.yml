@@ -23,9 +23,6 @@ dependencies:
   - qfm-fi >=2.1.4
   - polymosim >=1.2.0
   - openjdk >=17
-  # Helper commands vis-tree and pca-variance-plot
-  - matplotlib
-  - ete3
   # Development
   - pytest
   - ruff

@@ -1,10 +1,42 @@
 """Input checks of `phyloai run` and the six-state recoding."""
+import json
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from phyloai import recode, run
+
+
+@pytest.mark.parametrize("manifest", [False, True])
+@pytest.mark.parametrize("declared", [False, True])
+def test_model_selection_matches_substitution(tmp_path, manifest, declared):
+    models = []
+    for substitution in ("LG", "WAG"):
+        name = f"network-{len(models)}" if declared else f"DeepNNPhylogeny-{substitution}"
+        path = tmp_path / name
+        path.mkdir()
+        (path / "saved_model.pb").touch()
+        if declared:
+            (tmp_path / f"{name}.training.json").write_text(
+                json.dumps({"substitution_model": substitution})
+            )
+        models.append({"name": name, "model": name, "kind": "raw"})
+    if manifest:
+        (tmp_path / "model_manifest.json").write_text(json.dumps({"models": models}))
+    _, spec = run.model_files(tmp_path, "LG", "deepnnphylogeny")
+    assert spec.model == models[0]["model"]
+    with pytest.raises(ValueError, match="expected one matching network"):
+        run.model_files(tmp_path, "JTT", "deepnnphylogeny")
+
+
+def test_manifest_rejects_wrong_substitution(tmp_path):
+    (tmp_path / "DeepNNPhylogeny-WAG").mkdir()
+    (tmp_path / "model_manifest.json").write_text(json.dumps({"models": [
+        {"name": "DeepNNPhylogeny-WAG", "model": "DeepNNPhylogeny-WAG", "kind": "raw"}
+    ]}))
+    with pytest.raises(ValueError, match="LG/deepnnphylogeny: expected one matching network"):
+        run.model_files(tmp_path, "LG", "deepnnphylogeny")
 
 
 @pytest.mark.parametrize("version", ["1.8.0", "1.8.3", "1.9.0"])

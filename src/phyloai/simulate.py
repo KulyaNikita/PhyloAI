@@ -168,7 +168,10 @@ def build_parser(prog=None):
         description="Generate length-aware amino-acid simulations for quartet topology training."
     )
     parser.add_argument("-sequence_type", choices=["AA"], default="AA")
-    parser.add_argument("-substitution_model", choices=AA_MODELS, required=True)
+    model = parser.add_mutually_exclusive_group(required=True)
+    model.add_argument("-substitution_model", choices=AA_MODELS)
+    model.add_argument("--custom-model", "-custom_model", dest="custom_model",
+                       help="File containing custom amino-acid exchangeabilities and frequencies")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--training-scheme", "-length_dependence", dest="length_dependence",
                         help="Simulate every '<length> <replicates>' row; counts are per topology and branch regime")
@@ -179,24 +182,6 @@ def build_parser(prog=None):
     parser.add_argument("-processes", type=int, default=1)
     parser.add_argument('--batch-size', type=int, default=1000,
                         help='Maximum simulations buffered before writing to disk (default: 1000)')
-    parser.add_argument("-output_dir", default=".")
-    parser.add_argument("--poly-mosim", default="PolyMoSim",
-                        help="PolyMoSim executable (conda package polymosim), or its path")
-    return parser
-
-
-def build_custom_parser(prog=None):
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description="Generate length-aware amino-acid simulations using a custom Q matrix."
-    )
-    parser.add_argument("-sequence_type", choices=["AA"], default="AA")
-    parser.add_argument("-custom_model", required=True)
-    parser.add_argument(
-        "-length_dependence", required=True,
-        help="Text file containing '<alignment length> <replicate count>' per line.",
-    )
-    parser.add_argument("-processes", type=int, default=1)
     parser.add_argument("-output_dir", default=".")
     parser.add_argument("--poly-mosim", default="PolyMoSim",
                         help="PolyMoSim executable (conda package polymosim), or its path")
@@ -295,13 +280,9 @@ def run(args):
 
 
 def main(argv=None, prog=None):
-    run(build_parser(prog).parse_args(argv))
-    return 0
-
-
-def custom_main(argv=None, prog=None):
-    args = build_custom_parser(prog).parse_args(argv)
-    args.substitution_model = Path(args.custom_model).stem.replace(".", "_")
+    args = build_parser(prog).parse_args(argv)
+    if args.custom_model is not None:
+        args.substitution_model = Path(args.custom_model).stem.replace(".", "_")
     run(args)
     return 0
 

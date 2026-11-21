@@ -146,6 +146,23 @@ def model_files(root, substitution, family):
     def identity(value):
         normalized = _norm(value)
         return 'dayhoff' if normalized == 'day' else normalized
+
+    def matches_substitution(path, folder):
+        meta_path = path.with_name(path.name + '.training.json')
+        if not meta_path.exists():
+            meta_path = path.with_name(path.name + '.json')
+        metadata = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+        declared = metadata.get('substitution_model')
+        if declared:
+            return identity(declared) == identity(substitution)
+        if _norm(substitution) in _norm(path.name):
+            return True
+        recoding_model = {'dayhoff6': 'Dayhoff', 'sr6': 'JTT', 'kgb6': 'WAG'}
+        inferred = next((model for scheme, model in recoding_model.items() if scheme in _norm(path.name)), None)
+        if inferred:
+            return identity(inferred) == identity(substitution)
+        return folder != root
+
     if not root.is_dir():
         raise FileNotFoundError(f'Model directory not found: {root}. Run `phyloai download-models` or use --models.')
     folders = [root]
@@ -153,25 +170,16 @@ def model_files(root, substitution, family):
     found = []
     for folder in folders:
         if (folder / 'model_manifest.json').is_file():
-            specs = discover_specs(folder)
+            specs = [spec for spec in discover_specs(folder)
+                     if matches_substitution(folder / spec.model, folder)]
         else:
             candidates = []
             for path in folder.iterdir():
                 if not path.is_dir() or not (path / 'saved_model.pb').is_file():
                     continue
                 low = path.name.lower()
-                meta_path = folder / (path.name + '.training.json')
-                if not meta_path.exists():
-                    meta_path = folder / (path.name + '.json')
-                metadata = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-                declared = metadata.get('substitution_model')
-                if declared and identity(declared) != identity(substitution):
+                if not matches_substitution(path, folder):
                     continue
-                if not declared and _norm(substitution) not in _norm(low) and folder == root:
-                    recoding_model = {'dayhoff6': 'Dayhoff', 'sr6': 'JTT', 'kgb6': 'WAG'}
-                    inferred = next((model for scheme, model in recoding_model.items() if scheme in _norm(low)), None)
-                    if inferred != substitution:
-                        continue
                 is_ta = any(s in low for s in ('fisher', 'topology-aware', 'topology_aware'))
                 is_six = any(s in _norm(low) for s in ('dayhoff6', 'sr6', 'kgb6'))
                 allowed = (is_ta if family == 'fisher' else is_six if family == '6-state-la'

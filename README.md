@@ -73,13 +73,12 @@ bioconda), installs PhyloAI into it with `pip install -e .` and downloads the mo
 `--no-models` to skip the download, and `--existing-env` to install into the active environment.
 Run the tests with `pytest`.
 
-PhyloAI also installs with pip (`pip install .`, or `pip install '.[extras]'` for the helper commands
-`vis-tree` and `pca-variance-plot`), but QPC and the external programs are only available from conda.
+PhyloAI also installs with pip (`pip install .`), but QPC and the external programs are only available from conda.
 
 ### Upgrading from PhyloAI 1.x
 
 The scripts `run_phyloai.py`, `simulate_training_data.py`, `train_phyloai.py`,
-`download_protein_models.py`, `recode_aa_frequencies_6state.py` and those in `additional_scripts/`
+`download_protein_models.py` and `recode_aa_frequencies_6state.py`
 still work and call the new `phyloai` commands. They will be removed in a later release.
 `run_phyloai.py` still uses `PhyloAI-Fisher-Kaggle/` and `ModelDetector.h5` in the source folder if
 they are there. To use those models with `phyloai run`, move them into the data folder:
@@ -98,14 +97,10 @@ phyloai check
 | `phyloai run` | Reconstruct a species tree from protein alignments |
 | `phyloai download-models` | Download and verify the networks and ModelDetector |
 | `phyloai check` | Check the installation: packages, programs and models |
-| `phyloai simulate` | Simulate training data with PolyMoSim |
-| `phyloai simulate-custom` | Simulate training data with a custom amino-acid matrix |
+| `phyloai simulate` | Simulate training data with PolyMoSim using a built-in model or `--custom-model FILE` |
 | `phyloai train` | Train Fisher, six-state-LA or full-pattern networks |
 | `phyloai recode-6state` | Collapse 20-state frequencies into a six-state recoding |
 | `phyloai test-datasets` | Simulate test alignments and evaluate networks (and IQ-TREE) |
-| `phyloai vis-tree` | Show a Newick tree in a window (needs `ete3`) |
-| `phyloai pca-variance-plot` | Plot the cumulative variance of a fitted PCA model (needs `matplotlib`) |
-| `phyloai pca-variance-top8` | Variance kept by the first 8 PCA components |
 
 `phyloai <command> --help` shows the options of each command.
 
@@ -203,7 +198,7 @@ The supplied scheme generates 1,068,000 examples; the fixed-length example
 generates 300,000.  Results are written to disk in bounded
 batches (`--batch-size`, default 1,000), producing frequency, label and raw-length
 NumPy files. 
-See the [simulation details](additional_scripts/README.md#training-data).
+See the [simulation details](docs/training-and-benchmarking.md#training-data).
 
 Use `phyloai train` with matching NumPy frequency and topology-label arrays.
 The simulator saves 160,000 frequency columns in `ACDEFGHIKLMNPQRSTVWY`
@@ -237,7 +232,7 @@ arrays for Fisher and six-state runs. These arrays can be reused with
 `--input-format selected --selector-model SELECTOR.npz` or
 `--input-format recoded`, respectively; lengths and topology labels remain separate.
 
-See [additional scripts and detailed training documentation](additional_scripts/README.md)
+See the [training and benchmarking guide](docs/training-and-benchmarking.md)
 for simulation details, training-data preparation, and simulated-data benchmarking.
 
 ```bash
@@ -256,6 +251,6 @@ Please also cite the tools used in your analysis:
 
 ## Acknowledgements
 
-Dr. Anestis Gkanogiannis restructured PhyloAI 2.0 as a Python package with the `phyloai` command,
+Dr. Anestis Gkanogiannis restructured PhyloAI 1.1.0 as a Python package with the `phyloai` command,
 moved ASTRAQ, QPC, PolyMoSim and QFM-FI into their own bioconda packages, and set up the conda
 installation, the model downloads, the tests and GitHub Actions.

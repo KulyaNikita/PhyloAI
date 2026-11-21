@@ -1,28 +1,17 @@
-# Additional commands and detailed training documentation
+# Training and benchmarking
 
-The supported workflow is documented in the [main README](../README.md). Since PhyloAI 2.0 the
-code is the Python package in `src/phyloai/`, and every tool is a `phyloai <command>`. The scripts in
-this folder are small wrappers kept for compatibility with PhyloAI 1.x; they call the commands below.
+This guide covers training-data preparation, simulation settings and resource
+requirements, model training, reuse of transformed arrays, and benchmarking
+on simulated protein alignments. Installation and tree reconstruction are
+covered in the main README. [Main README](../README.md)
 
-## Contents
-
-| Command | Former script | Purpose |
-|---|---|---|
-| `phyloai test-datasets` | `run_analysis_on_test_datasets_aa.py` | Simulated-data benchmark; see the example below |
-| `phyloai vis-tree tree.nwk` | `vis_tree.py` | Interactive view of a Newick tree (needs `ete3`) |
-| `phyloai pca-variance-plot model.pkl LG` | `pca_plot_variance_explanation.py` | Plot the cumulative variance of a fitted PCA model (needs `matplotlib`) |
-| `phyloai pca-variance-top8 frequencies.npy` | `how_much_variances_explained_by_first_8_components.py` | Fit PCA-8 to a frequency array and report the retained variance. This historical utility loads the array into RAM; provide frequencies without an appended length column |
-
-Training data simulation and training are `phyloai simulate` and `phyloai train`; tree reconstruction
-is `phyloai run`. The old QPC sources (1.4–1.7.1) were removed; QPC is now the conda package
-`quartet-pattern-counter` (version 1.8 or newer, with the same pattern order as 1.7.1).
+Run the examples from the repository root after activating the PhyloAI environment.
+The simulation examples use the supplied training scheme. [Training scheme](../training_scheme.txt)
 
 ## Training protein quartet models
 
-Use **`phyloai train`** (formerly `train_phyloai.py`) as the single training entry point for the protein
-models. It replaces the older `TopologyPredictorTraining.py` and
-`ModelPredictorTraining.py`. ModelDetector is supplied as an external pretrained
-model and is not trained by this script.
+Use `phyloai simulate` to generate training arrays and `phyloai train` to train
+protein quartet models. ModelDetector is supplied as an external pretrained model.
 
 ### Training data
 
@@ -41,7 +30,7 @@ Prepare matching NumPy arrays:
   does not accept separate length inputs.
 
 These are the saved frequency arrays used for network training. Alignment
-simulation is a separate preparation step using PolyMoSim. 
+simulation is a separate preparation step using PolyMoSim.
 
 The supplied [training scheme](../training_scheme.txt) contains two columns:
 alignment length and replicates **per topology and branch regime**. All rows
@@ -64,9 +53,22 @@ phyloai simulate -substitution_model LG \
   -processes 4 -output_dir simulation_output_fixed
 ```
 
-The fixed-length example generates 300,000 quartets, not 50,000.
+The fixed-length example generates 300,000 quartets.
 Use PolyMoSim model names such as `DAY`, `Qplant`, and `Qinsect` (without dots).
 Override the simulator with `--poly-mosim /path/to/binary` if needed.
+
+For a custom substitution model, supply a matrix file with `--custom-model`.
+It must contain 19 lower-triangle rows of exchangeabilities, with widths 1 through 19,
+followed by one row of 20 amino-acid frequencies. All entries must be positive,
+and the frequencies must sum to 1. The amino-acid order is `ACDEFGHIKLMNPQRSTVWY`.
+
+```bash
+phyloai simulate --custom-model my_model.txt \
+  --training-scheme training_scheme.txt -processes 4 -output_dir simulation_custom
+```
+
+The custom model name is taken from the file stem, with dots replaced by underscores.
+Custom models also accept `--alignment-length`, `--replicates`, and `--batch-size`.
 
 Each run saves three arrays, with matching row order:
 
@@ -84,7 +86,7 @@ dataset is not retained in RAM. `--batch-size` defaults to 1,000; its frequency
 buffer alone is about 640 MB, with additional temporary copies and worker memory.
 `-processes` controls simulation workers. Disk space still scales with all rows:
 the supplied scheme needs about 684 GB for the frequency file, and the
-300,000-row fixed-length example needs about 192 GB. 
+300,000-row fixed-length example needs about 192 GB.
 
 Training internal branches span 0.02–0.5 substitutions/site in one regime,
 and 0.001–0.02 in the short regime. Below 1,000 sites, the short-regime lower
@@ -109,7 +111,7 @@ phyloai train \
   --threads 8
 ```
 
-The selected  frequencies and log10 alignment length enter separate normalized branches.
+The selected frequencies and log10 alignment length enter separate normalized branches.
 The defaults retain the Fisher trainer's dropout of 0.4, L2 penalty of 0.0001,
 20% validation split, seed 13, and maximum of 200 epochs.
 Frequency arrays are memory-mapped and read in batches; only the much smaller
@@ -127,7 +129,7 @@ label and length arrays are loaded in full.
 
 Only B1 and B3 architectures are supported. PCA, random projections, shallow
 networks, non-length-aware Fisher models, and non-length-aware six-state models
-are no longer trained by this script. 
+are no longer trained by this script.
 
 Six-state recoding replaces Fisher selection, producing 1,296 features.
 The original comparisons used Dayhoff, JTT, and WAG for Dayhoff-6, SR-6, and
@@ -194,8 +196,8 @@ creating another copy. Supply raw, untransformed lengths as before.
 
 ## Benchmarking on simulated protein alignments
 
-`phyloai test-datasets` (formerly `run_analysis_on_test_datasets_aa.py`) is the amino-acid quartet benchmark used
-for the simulation comparisons.  It simulates each of the three quartet topologies with PolyMoSim, counts
+`phyloai test-datasets` evaluates amino-acid quartet models on simulated alignments.
+It simulates each of the three quartet topologies with PolyMoSim, counts
 site-pattern frequencies with QPC, and evaluates the supplied networks.
 It supports TA/Fisher selectors, PCA/GRP/SRP reducers, raw-pattern networks,
 and Dayhoff/SR/KGB 6-state models, with model-specific length inputs when

@@ -19,9 +19,7 @@ from phyloai import __version__, paths
 PACKAGES = [("numpy", "numpy"), ("tensorflow", "tensorflow"), ("sklearn", "scikit-learn"),
             ("Bio", "biopython"), ("QuartetPatternCounterModule", "QuartetPatternCounterModule")]
 # (import name, distribution name, what it is needed for)
-OPTIONAL_PACKAGES = [("tf_keras", "tf-keras", "phyloai train with TensorFlow >=2.16"),
-                     ("matplotlib", "matplotlib", "phyloai pca-variance-plot"),
-                     ("ete3", "ete3", "phyloai vis-tree")]
+OPTIONAL_PACKAGES = [("tf_keras", "tf-keras", "phyloai train with TensorFlow >=2.16")]
 # (command, version arguments or None, what it is used for)
 PROGRAMS = [("ASTRAQ", ["--version"], "phyloai run --method astraq/astraqw (default)"),
             ("astral", None, "phyloai run --method astral"),

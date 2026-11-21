@@ -31,8 +31,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Only for the helper commands vis-tree and pca-variance-plot.
-extras = ["matplotlib", "ete3"]
 test = ["pytest"]
 
 [project.scripts]

@@ -20,20 +20,13 @@ COMMANDS = {
               "Check the installation: Python packages, external tools and models"),
     "simulate": ("phyloai.simulate", "main",
                  "Simulate training data with PolyMoSim"),
-    "simulate-custom": ("phyloai.simulate", "custom_main",
-                        "Simulate training data with a custom amino-acid matrix"),
     "train": ("phyloai.train", "main",
               "Train Fisher, six-state or full-pattern networks"),
     "recode-6state": ("phyloai.recode", "main",
                       "Collapse 20-state site pattern frequencies into a six-state recoding"),
     "test-datasets": ("phyloai.benchmark", "main",
                       "Simulate test alignments and evaluate networks (and IQ-TREE)"),
-    "vis-tree": ("phyloai.tools.vis_tree", "main",
-                 "Show a Newick tree in a window (needs ete3)"),
-    "pca-variance-plot": ("phyloai.tools.pca_variance_plot", "main",
-                          "Plot the cumulative variance of a fitted PCA model (needs matplotlib)"),
-    "pca-variance-top8": ("phyloai.tools.pca_variance_top8", "main",
-                          "Variance kept by the first 8 PCA components of a frequency array"),
+
 }
 
 
