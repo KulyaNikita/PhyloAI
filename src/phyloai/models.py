@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import shutil
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from importlib import resources
@@ -18,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
-from phyloai import paths
+from phyloai import __version__, paths
 
 API = 'https://api.kaggle.com/v1/models.ModelApiService/'
 RELEASE = dict(ownerSlug='nikitakulya', modelSlug='phyloai-protein',
@@ -26,6 +27,11 @@ RELEASE = dict(ownerSlug='nikitakulya', modelSlug='phyloai-protein',
 PREFIX = 'PhyloAI-Fisher-Kaggle/PhyloAI-Fisher-Kaggle'
 MANIFEST_SHA256 = '6166b5297a46e37e002c8bdbeb6c309368901212ce64bbc782a99021f9dd4569'
 FAMILIES = ('fisher', '6-state-la')
+# Kaggle answers requests with the generic Python User-Agent with HTTP 404 when it throttles them, so
+# send our own, retry with increasing waits and download only a few files at a time.
+USER_AGENT = f'phyloai/{__version__} (+https://github.com/KulyaNikita/PhyloAI)'
+RETRY_WAITS = (2, 4, 8, 16, 32)  # Seconds before the 2nd to 6th attempt.
+PARALLEL_DOWNLOADS = 2
 
 # ModelDetector: only the network from Tinh Nguyen's Figshare deposit (version 22, CC BY 4.0).
 DETECTOR_URL = 'https://ndownloader.figshare.com/files/49575015'
@@ -41,7 +47,7 @@ def manifest_file(name):
 def request(method, **fields):
     # No SDK, cookie jar, Authorization header, or credential-file access.
     return urlopen(Request(API + method, data=json.dumps(dict(RELEASE, **fields)).encode(),
-                           headers={'Content-Type': 'application/json'}), timeout=120)
+                           headers={'Content-Type': 'application/json', 'User-Agent': USER_AGENT}), timeout=120)
 
 
 def digest(path):
@@ -88,7 +94,7 @@ def download(output, family='fisher'):
             raise ValueError(f'Existing file differs from release; refusing to overwrite: {target}')
         target.parent.mkdir(parents=True, exist_ok=True)
         partial = target.with_name(target.name + '.download')
-        for attempt in range(3):
+        for attempt in range(len(RETRY_WAITS) + 1):
             try:
                 with request('DownloadModelInstanceVersion', path=name) as response, partial.open('wb') as handle:
                     shutil.copyfileobj(response, handle)
@@ -97,12 +103,15 @@ def download(output, family='fisher'):
                 partial.replace(target)
                 print(f'Verified {target.relative_to(output)}', flush=True)
                 return target
-            except Exception:
-                if attempt == 2:
-                    raise
-                time.sleep(2)
+            except Exception as exc:
+                partial.unlink(missing_ok=True)
+                if attempt == len(RETRY_WAITS):
+                    raise RuntimeError(f'Could not download {name} from Kaggle: {exc}') from exc
+                wait = RETRY_WAITS[attempt]
+                print(f'Retrying {local_name} in {wait} s ({exc})', file=sys.stderr, flush=True)
+                time.sleep(wait)
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=PARALLEL_DOWNLOADS) as pool:
         list(pool.map(lambda name: fetch(name, expected[name]), sorted(expected)))
     models = list(output.glob('PhyloAI-*-6-LA/saved_model.pb' if six_state else 'PhyloAI-Fisher-*/saved_model.pb'))
     model_count = 3 if six_state else 15
@@ -119,7 +128,7 @@ def download_detector(target):
             raise ValueError(f'Existing {target} differs from the Figshare network; refusing to overwrite it.')
         print(f'ModelDetector already installed and verified: {target}')
         return
-    with urlopen(DETECTOR_URL, timeout=120) as response:
+    with urlopen(Request(DETECTOR_URL, headers={'User-Agent': USER_AGENT}), timeout=120) as response:
         archive = response.read()
     if hashlib.sha256(archive).hexdigest() != DETECTOR_ARCHIVE_SHA256:
         raise ValueError('ModelDetector archive checksum mismatch')
