@@ -1,0 +1,72 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash -el {0}  # Login shell, so the conda environment is active.
+    env:
+      PHYLOAI_DATA: ${{ github.workspace }}/../phyloai-data
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Conda environment (tools from bioconda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          environment-file: environment.yml
+          activate-environment: phyloAI
+
+      - name: Install PhyloAI
+        run: |
+          pip install --no-deps --no-build-isolation -e .
+          pip check
+          phyloai --version
+          phyloai check --no-models
+
+      - name: Cache the models
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PHYLOAI_DATA }}
+          key: phyloai-models-${{ hashFiles('src/phyloai/data/*.SHA256SUMS', 'src/phyloai/models.py') }}
+
+      - name: Download the models
+        run: |
+          phyloai download-models
+          phyloai check
+
+      - name: Tests
+        run: pytest -v
+
+      - name: Run with ModelDetector
+        run: |
+          phyloai run --alignment proteins.fasta --output "$RUNNER_TEMP/results"
+          cat "$RUNNER_TEMP/results/astraq.tre"
+
+      - name: Run per gene with all methods
+        run: |
+          phyloai run --alignment genes/ --method all --output "$RUNNER_TEMP/results_per_gene"
+          cat "$RUNNER_TEMP/results_per_gene"/*.tre
+
+      - name: Simulate, train and run a small network
+        run: |
+          cd "$RUNNER_TEMP"
+          phyloai simulate -substitution_model LG --alignment-length 200 --replicates 30 -processes 4 -output_dir sim
+          phyloai train --training-data sim/site_pattern_frequencies_LG_L200_R30.npy \
+            --topology-data sim/trainTopoClass_LG_L200_R30.npy --length-data sim/trainLength_LG_L200_R30.npy \
+            --substitution-model LG --method fisher --selected-patterns 100 --epochs 2 --batch-size 32 \
+            --output-dir trained --threads 4
+          phyloai run --alignment "$GITHUB_WORKSPACE/proteins.fasta" --models trained --substitution-model LG \
+            --method astraq --output results_trained

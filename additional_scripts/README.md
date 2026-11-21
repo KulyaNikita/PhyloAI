@@ -1,26 +1,25 @@
-# Additional scripts and detailed training documentation
+# Additional commands and detailed training documentation
 
-Run the commands below from the **project root**, not from this directory.
-The supported workflow is documented in the [main README](../README.md).
-Training and training-data simulation entry points remain in the project root;
-the simulated-data benchmark is in this directory.
+The supported workflow is documented in the [main README](../README.md). Since PhyloAI 2.0 the
+code is the Python package in `src/phyloai/`, and every tool is a `phyloai <command>`. The scripts in
+this folder are small wrappers kept for compatibility with PhyloAI 1.x; they call the commands below.
 
 ## Contents
 
-- `vis_tree.py`: interactive visualization of a Newick tree: `python additional_scripts/vis_tree.py tree.nwk`.
-- `run_analysis_on_test_datasets_aa.py`: simulated-data benchmark; see the example below.
-- `pca_plot_variance_explanation.py`: plot cumulative variance from a fitted PCA model: `python additional_scripts/pca_plot_variance_explanation.py model.pkl LG`.
-- `how_much_variances_explained_by_first_8_components.py`: fit PCA-8 to a frequency array and report retained variance: `python additional_scripts/how_much_variances_explained_by_first_8_components.py frequencies.npy`. This historical utility loads the array into RAM; provide frequencies without an appended length column.
-- `quartet-pattern-counter-v.1.4/`, `quartet-pattern-counter-v.1.5/`, and `quartet-pattern-counter-v.1.6/`: historical sources, not installed by the current installer.
+| Command | Former script | Purpose |
+|---|---|---|
+| `phyloai test-datasets` | `run_analysis_on_test_datasets_aa.py` | Simulated-data benchmark; see the example below |
+| `phyloai vis-tree tree.nwk` | `vis_tree.py` | Interactive view of a Newick tree (needs `ete3`) |
+| `phyloai pca-variance-plot model.pkl LG` | `pca_plot_variance_explanation.py` | Plot the cumulative variance of a fitted PCA model (needs `matplotlib`) |
+| `phyloai pca-variance-top8 frequencies.npy` | `how_much_variances_explained_by_first_8_components.py` | Fit PCA-8 to a frequency array and report the retained variance. This historical utility loads the array into RAM; provide frequencies without an appended length column |
 
-The simulation test runner is `additional_scripts/run_analysis_on_test_datasets_aa.py`.
-`simulate_training_data.py` and `train_phyloai.py` remain in the project root.
-Use `run_phyloai.py` for empirical tree reconstruction. Old QPC sources are
-retained for reference, not used by the current workflow.
+Training data simulation and training are `phyloai simulate` and `phyloai train`; tree reconstruction
+is `phyloai run`. The old QPC sources (1.4–1.7.1) were removed; QPC is now the conda package
+`quartet-pattern-counter` (version 1.8 or newer, with the same pattern order as 1.7.1).
 
 ## Training protein quartet models
 
-Use **`train_phyloai.py`** as the single training entry point for the protein
+Use **`phyloai train`** (formerly `train_phyloai.py`) as the single training entry point for the protein
 models. It replaces the older `TopologyPredictorTraining.py` and
 `ModelPredictorTraining.py`. ModelDetector is supplied as an external pretrained
 model and is not trained by this script.
@@ -53,14 +52,14 @@ examples. The four-batch training subset used in the study contained 284,784
 examples; that historical partition is no longer applied by this simulator.
 
 ```bash
-python simulate_training_data.py -substitution_model LG \
+phyloai simulate -substitution_model LG \
   --training-scheme training_scheme.txt -processes 4 -output_dir simulation_output
 ```
 
 For fixed-length training without a scheme:
 
 ```bash
-python simulate_training_data.py -substitution_model LG \
+phyloai simulate -substitution_model LG \
   --alignment-length 1000000 --replicates 50000 \
   -processes 4 -output_dir simulation_output_fixed
 ```
@@ -97,7 +96,7 @@ buffer size does not change results. Temporary simulation files are removed.
 ### Default PhyloAI-Fisher training
 
 ```bash
-python train_phyloai.py \
+phyloai train \
   --training-data simulation_output/site_pattern_frequencies_LG_scheme_training_scheme.npy \
   --topology-data simulation_output/trainTopoClass_LG_scheme_training_scheme.npy \
   --length-data simulation_output/trainLength_LG_scheme_training_scheme.npy \
@@ -153,7 +152,7 @@ Feature selection and normalization use training rows only. Existing outputs
 are not overwritten; choose a new output directory or model prefix.
 
 ```bash
-python train_phyloai.py --help
+phyloai train --help
 ```
 
 ### Reusing transformed arrays
@@ -162,7 +161,7 @@ For Fisher-selected input, provide the matching selector; feature columns must
 follow its `indices` order. No Fisher scoring or selection is repeated:
 
 ```bash
-python train_phyloai.py \
+phyloai train \
   --training-data trained/LG/PhyloAI-Fisher-LG-k10000.features.npy \
   --topology-data simulation_output/trainTopoClass_LG_scheme_training_scheme.npy \
   --length-data simulation_output/trainLength_LG_scheme_training_scheme.npy \
@@ -181,7 +180,7 @@ It is copied beside the new network for use by the workflow.
 For six-state input, specify the recoding scheme that produced the array:
 
 ```bash
-python train_phyloai.py \
+phyloai train \
   --training-data trained/Dayhoff/PhyloAI-Dayhoff-6-LA.features.npy \
   --topology-data simulation_output/trainTopoClass_DAY_scheme_training_scheme.npy \
   --length-data simulation_output/trainLength_DAY_scheme_training_scheme.npy \
@@ -195,20 +194,20 @@ creating another copy. Supply raw, untransformed lengths as before.
 
 ## Benchmarking on simulated protein alignments
 
-`run_analysis_on_test_datasets_aa.py` is the amino-acid quartet benchmark used
+`phyloai test-datasets` (formerly `run_analysis_on_test_datasets_aa.py`) is the amino-acid quartet benchmark used
 for the simulation comparisons.  It simulates each of the three quartet topologies with PolyMoSim, counts
-site-pattern frequencies with QPC 1.7.1, and evaluates the supplied networks.
+site-pattern frequencies with QPC, and evaluates the supplied networks.
 It supports TA/Fisher selectors, PCA/GRP/SRP reducers, raw-pattern networks,
 and Dayhoff/SR/KGB 6-state models, with model-specific length inputs when
-required. QPC 1.7.1 frequencies already follow the training pattern order;
-no order conversion is performed. The included
-`recode_aa_frequencies_6state.py` supplies the 6-state recoding functions.
+required. QPC frequencies already follow the training pattern order;
+no order conversion is performed. `phyloai.recode` (`phyloai recode-6state`)
+supplies the 6-state recoding functions.
 
 For example, evaluate the released LG model without bootstrap or IQ-TREE:
 
 ```bash
-python additional_scripts/run_analysis_on_test_datasets_aa.py \
-  --models PhyloAI-Fisher-Kaggle \
+phyloai test-datasets \
+  --models ~/.local/share/phyloai/models \
   --model-name PhyloAI-Fisher-LG \
   --substitution-model LG --branch-mode intermedbr \
   --alignment-length 300 --replicates 1000 \
@@ -237,11 +236,11 @@ simulated rooted representation. Tested alignment lengths were 300, 1,000,
 and 10,000 amino-acid sites. Use `DAY` for Dayhoff simulations and `Q.plant`,
 `Q.insect`, etc. for the Q-series models.
 
-`PolyMoSim` is the executable installed by `install.sh`; override it with
-`--poly-mosim /path/to/binary` if necessary. QPC must be installed in the same
-Python environment. To include maximum-likelihood predictions, omit
+`PolyMoSim` is the program from the conda package `polymosim`; override it with
+`--poly-mosim /path/to/binary` if necessary. QPC (conda package `quartet-pattern-counter`)
+must be installed in the same Python environment. To include maximum-likelihood predictions, omit
 `--skip-iqtree` and supply `--iqtree /path/to/iqtree3` if it is not on PATH.
-IQ-TREE is optional and is not installed by `install.sh`. Its model is fixed
+IQ-TREE is optional and is not installed with PhyloAI (`conda install -c bioconda iqtree`). Its model is fixed
 to the simulation's substitution matrix with invariant sites and gamma rate
 variation, rather than selected by ModelFinder. Bootstrap defaults to 100;
 explicitly use `--bootstrap-replicates 0` for ordinary predictions only.
@@ -252,5 +251,5 @@ per-quartet predictions, model inventory, and simulation configuration.
 
 
 ```bash
-python additional_scripts/run_analysis_on_test_datasets_aa.py --help
+phyloai test-datasets --help
 ```

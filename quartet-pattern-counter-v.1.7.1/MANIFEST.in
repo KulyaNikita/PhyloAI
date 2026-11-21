@@ -1,2 +1,0 @@
-include *.h *.hpp *.cpp License.txt README.md
-recursive-include tests *.py

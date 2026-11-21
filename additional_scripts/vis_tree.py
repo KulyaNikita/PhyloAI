@@ -1,20 +1,13 @@
-from ete3 import Tree, TreeStyle, NodeStyle
+#!/usr/bin/env python3
+"""Deprecated: use `phyloai vis-tree`. Kept for compatibility with PhyloAI 1.x; will be removed later."""
 import sys
+from pathlib import Path
 
-tree_name = sys.argv[1]
+try:
+    from phyloai.cli import main
+except ImportError:  # Source checkout without `pip install -e .`
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from phyloai.cli import main
 
-# Load extended Newick tree (format=1 keeps internal node names)
-t = Tree(tree_name, format=1)
-
-# Optional: style nodes so internal names are clearly visible
-def layout(node):
-    if not node.is_leaf():
-        node.img_style["size"] = 6  # make internal nodes visible
-
-ts = TreeStyle()
-ts.show_leaf_name = True
-ts.layout_fn = layout
-ts.show_branch_support = True  # if support values exist
-
-# Show tree (interactive window)
-t.show(tree_style=ts)
+print("Note: vis_tree.py is deprecated; use `phyloai vis-tree`.", file=sys.stderr)
+sys.exit(main(["vis-tree", *sys.argv[1:]]))

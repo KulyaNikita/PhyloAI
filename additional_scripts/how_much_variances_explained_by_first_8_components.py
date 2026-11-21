@@ -1,24 +1,13 @@
 #!/usr/bin/env python3
-
-"""
-
-(c) Nikita Kulikov, Iker Irisarri, Christoph Mayer; LIB 2025
-
-A code to see how much information is preserved by first 8 components
-
-"""
+"""Deprecated: use `phyloai pca-variance-top8`. Kept for compatibility with PhyloAI 1.x; will be removed later."""
 import sys
-import numpy as np
-from sklearn.decomposition import PCA
+from pathlib import Path
 
-frequency_path = sys.argv[1]
+try:
+    from phyloai.cli import main
+except ImportError:  # Source checkout without `pip install -e .`
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from phyloai.cli import main
 
-X = np.load(frequency_path)
-
-pca = PCA(n_components=8)
-X_transformed = pca.fit_transform(X)
-
-# Compute the total variance explained by the first 8 components
-explained_variance = np.sum(pca.explained_variance_ratio_)
-
-print(f"Explained variance by the first 8 components: {explained_variance:.4f}")
+print("Note: how_much_variances_explained_by_first_8_components.py is deprecated; use `phyloai pca-variance-top8`.", file=sys.stderr)
+sys.exit(main(["pca-variance-top8", *sys.argv[1:]]))

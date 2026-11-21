@@ -26,7 +26,40 @@ IQ-TREE runtime increases strongly with alignment lengths. For the 100,000 long 
 
 ## Installation
 
-Use Miniforge (recommended) or another conda installation, with Git available.
+### With conda (recommended)
+
+PhyloAI and all the programs it uses are on [bioconda](https://bioconda.github.io/).
+Use [Miniforge](https://github.com/conda-forge/miniforge) or another conda installation:
+
+```bash
+conda create -n phyloai -c conda-forge -c bioconda phyloai
+conda activate phyloai
+phyloai download-models
+phyloai check
+```
+
+This installs PhyloAI with [Quartet Pattern Counter (QPC)](https://github.com/cmayer/QuartetPatternCounter),
+[ASTRAQ](https://github.com/KulyaNikita/ASTRAQ), [ASTRAL](https://github.com/smirarab/ASTRAL),
+[QFM-FI](https://github.com/sharmin-mim/qfm_java), [PolyMoSim](https://github.com/cmayer/PolyMoSim),
+Java and TensorFlow. `phyloai check` reports what is installed.
+
+### Models
+
+The pretrained networks are not part of the package. `phyloai download-models` downloads the 15 Fisher
+and three six-state-LA
+[PhyloAI protein models from Kaggle](https://www.kaggle.com/models/nikitakulya/phyloai-protein)
+(about 525 MB) and ModelDetector from Figshare, and checks every file against its SHA-256 checksum.
+They go into the PhyloAI data folder:
+
+- `~/.local/share/phyloai` on Linux (or `$XDG_DATA_HOME/phyloai`)
+- `~/Library/Application Support/phyloai` on macOS
+- the folder in the `PHYLOAI_DATA` environment variable, if it is set
+
+The networks are in `models/` and ModelDetector in `ModelDetector.h5`. All conda environments share
+the data folder, so the models are downloaded only once. Use `--family fisher` or `--family 6-state-la`
+to download only one family, and `phyloai run --models DIR --detector FILE` for models elsewhere.
+
+### From the source code (development)
 
 ```bash
 git clone https://github.com/KulyaNikita/PhyloAI.git
@@ -35,23 +68,46 @@ bash install.sh
 conda activate phyloAI
 ```
 
-The installer prepares the environment, installs QPC v1.7.1, ModelDetector, ASTRAL,
-QFM-FI and ASTRAQ, and builds PolyMoSim. It also downloads 15 Fisher and three six-state-LA pretrained
-[PhyloAI protein models on Kaggle](https://www.kaggle.com/models/nikitakulya/phyloai-protein)
-into `PhyloAI-Fisher-Kaggle/`.
+`install.sh` creates the conda environment `phyloAI` from `environment.yml` (the programs come from
+bioconda), installs PhyloAI into it with `pip install -e .` and downloads the models. Use
+`--no-models` to skip the download, and `--existing-env` to install into the active environment.
+Run the tests with `pytest`.
 
-For a manually managed environment:
+PhyloAI also installs with pip (`pip install .`, or `pip install '.[extras]'` for the helper commands
+`vis-tree` and `pca-variance-plot`), but QPC and the external programs are only available from conda.
+
+### Upgrading from PhyloAI 1.x
+
+The scripts `run_phyloai.py`, `simulate_training_data.py`, `train_phyloai.py`,
+`download_protein_models.py`, `recode_aa_frequencies_6state.py` and those in `additional_scripts/`
+still work and call the new `phyloai` commands. They will be removed in a later release.
+`run_phyloai.py` still uses `PhyloAI-Fisher-Kaggle/` and `ModelDetector.h5` in the source folder if
+they are there. To use those models with `phyloai run`, move them into the data folder:
 
 ```bash
-conda env create -f environment.yml
-conda activate phyloAI
-bash install.sh --existing-env
+mkdir -p ~/.local/share/phyloai
+mv PhyloAI-Fisher-Kaggle ~/.local/share/phyloai/models
+mv ModelDetector.h5 ~/.local/share/phyloai/
+phyloai check
 ```
 
-For an existing environment, use `conda env update -f environment.yml` instead
-of `conda env create`. Add `--skip-polymosim` to the installer if simulation
-is not needed. To download or verify the models separately, run
-`python download_protein_models.py`.
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `phyloai run` | Reconstruct a species tree from protein alignments |
+| `phyloai download-models` | Download and verify the networks and ModelDetector |
+| `phyloai check` | Check the installation: packages, programs and models |
+| `phyloai simulate` | Simulate training data with PolyMoSim |
+| `phyloai simulate-custom` | Simulate training data with a custom amino-acid matrix |
+| `phyloai train` | Train Fisher, six-state-LA or full-pattern networks |
+| `phyloai recode-6state` | Collapse 20-state frequencies into a six-state recoding |
+| `phyloai test-datasets` | Simulate test alignments and evaluate networks (and IQ-TREE) |
+| `phyloai vis-tree` | Show a Newick tree in a window (needs `ete3`) |
+| `phyloai pca-variance-plot` | Plot the cumulative variance of a fitted PCA model (needs `matplotlib`) |
+| `phyloai pca-variance-top8` | Variance kept by the first 8 PCA components |
+
+`phyloai <command> --help` shows the options of each command.
 
 ## Run the workflow
 
@@ -60,10 +116,10 @@ Use `--format` for another supported alignment format.
 
 ### Quick start
 
-After installation and activating `phyloAI`, run:
+After installation and `phyloai download-models`, run:
 
 ```bash
-python run_phyloai.py --alignment proteins.fasta --output results
+phyloai run --alignment proteins.fasta --output results
 ```
 
 This uses ModelDetector, the installed Fisher models, unweighted ASTRAQ, and
@@ -73,7 +129,7 @@ be a new output directory. The final tree is saved as `results/astraq.tre`.
 ### Concatenated alignment
 
 ```bash
-python run_phyloai.py \
+phyloai run \
   --alignment proteins.fasta \
   --method astraq --threads 1 \
   --output results_concatenated
@@ -82,7 +138,7 @@ python run_phyloai.py \
 ### Per-gene alignments
 
 ```bash
-python run_phyloai.py \
+phyloai run \
   --alignment genes/ \
   --method all --threads 1 \
   --output results_per_gene
@@ -102,7 +158,7 @@ one final tree per amalgamation method. Taxon identifiers must be consistent acr
 To skip ModelDetector and specify a substitution model:
 
 ```bash
-python run_phyloai.py \
+phyloai run \
   --alignment proteins.fasta --substitution-model LG \
   --method astraqw --threads 1 --output results_LG
 ```
@@ -110,8 +166,8 @@ python run_phyloai.py \
 ModelDetector supports 13 matrices; DCMut and JTTDCMut require explicit
 `--substitution-model` selection. The default family is `fisher`.
 The runner also supports `--family 6-state-la` and `--family deepnnphylogeny`;
-the three 6-state-LA networks are installed automatically in the same model
-directory. Original [DeepNNPhylogeny networks](https://zenodo.org/records/7772948) must be provided separately
+the three 6-state-LA networks are downloaded by `phyloai download-models` into the same model
+folder. Original [DeepNNPhylogeny networks](https://zenodo.org/records/7772948) must be provided separately
 with `--models /path/to/models`.
 Each network must retain its matching metadata and, for Fisher, its selector. Available
 6-state-LA models cover Dayhoff, JTT (SR-6), and WAG (KGB-6).
@@ -121,15 +177,15 @@ Outputs include final trees (`astraq.tre`, `astraqw.tre`, `astral.tre`, and/or
 `running_times.tsv`. Existing output directories are not overwritten.
 
 ```bash
-python run_phyloai.py --help
+phyloai run --help
 ```
 
 ## Train models
 
-Generate all entries in a training scheme with `simulate_training_data.py`:
+Generate all entries in a training scheme with `phyloai simulate`:
 
 ```bash
-python simulate_training_data.py \
+phyloai simulate \
   -substitution_model LG --training-scheme training_scheme.txt \
   -processes 4 -output_dir simulation_output
 ```
@@ -137,7 +193,7 @@ python simulate_training_data.py \
 Alternatively, simulate fixed-length data without a scheme:
 
 ```bash
-python simulate_training_data.py \
+phyloai simulate \
   -substitution_model LG --alignment-length 1000000 --replicates 50000 \
   -processes 4 -output_dir simulation_output_fixed
 ```
@@ -149,7 +205,7 @@ batches (`--batch-size`, default 1,000), producing frequency, label and raw-leng
 NumPy files. 
 See the [simulation details](additional_scripts/README.md#training-data).
 
-Use `train_phyloai.py` with matching NumPy frequency and topology-label arrays.
+Use `phyloai train` with matching NumPy frequency and topology-label arrays.
 The simulator saves 160,000 frequency columns in `ACDEFGHIKLMNPQRSTVWY`
 Cartesian-product order; raw lengths are stored in a separate file.
 Fisher and six-state-LA require this separate file through `--length-data`.
@@ -158,7 +214,7 @@ supplied in the same order. Frequency arrays are memory-mapped and read in
 batches rather than loaded entirely into RAM.
 
 ```bash
-python train_phyloai.py \
+phyloai train \
   --training-data simulation_output/site_pattern_frequencies_LG_scheme_training_scheme.npy \
   --topology-data simulation_output/trainTopoClass_LG_scheme_training_scheme.npy \
   --length-data simulation_output/trainLength_LG_scheme_training_scheme.npy \
@@ -168,7 +224,9 @@ python train_phyloai.py \
   --output-dir trained/LG --threads 8
 ```
 
-This trains a Fisher model with separate pattern and length inputs. The trainer
+This trains a Fisher model with separate pattern and length inputs.
+Training uses Keras 2: built into TensorFlow 2.15, and the package `tf-keras` (installed with
+PhyloAI) for newer TensorFlow versions; `phyloai train` selects it automatically. The trainer
 supports three families: `--method raw` for fixed-length full-pattern
 DeepNNPhylogeny-like networks, `--method fisher` for Fisher, and
 `--method six-state --recoding dayhoff-6` (or `sr-6`, `kgb-6`) for six-state-LA.
@@ -183,7 +241,7 @@ See [additional scripts and detailed training documentation](additional_scripts/
 for simulation details, training-data preparation, and simulated-data benchmarking.
 
 ```bash
-python train_phyloai.py --help
+phyloai train --help
 ```
 
 ## Credits and citation
@@ -196,3 +254,8 @@ Please also cite the tools used in your analysis:
 - [ASTRAL](https://doi.org/10.1186/s12859-018-2129-y).
 - [QFM-FI (Mim et al., 2023)](https://doi.org/10.1093/bioinformatics/btad332).
 
+## Acknowledgements
+
+Dr. Anestis Gkanogiannis restructured PhyloAI 2.0 as a Python package with the `phyloai` command,
+moved ASTRAQ, QPC, PolyMoSim and QFM-FI into their own bioconda packages, and set up the conda
+installation, the model downloads, the tests and GitHub Actions.

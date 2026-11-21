@@ -1,3 +1,60 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phyloai"
+dynamic = ["version"]
+description = "Neural-network quartet inference and species-tree reconstruction for protein alignments"
+readme = "README.md"
+license = { file = "LICENSE.md" }
+authors = [
+  { name = "Nikita Kulikov" },
+  { name = "Christoph Mayer" },
+  { name = "Anestis Gkanogiannis" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: BSD License",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+# The external programs (ASTRAQ, ASTRAL, QFM-FI, PolyMoSim, Java) and QPC come from bioconda:
+# see environment.yml. QPC is not on PyPI; with conda it is the package quartet-pattern-counter.
+dependencies = [
+  "numpy",
+  "tensorflow>=2.15",
+  "tf-keras",  # Keras 2 for `phyloai train` with TensorFlow >=2.16
+  "scikit-learn",
+  "biopython",
+  "QuartetPatternCounterModule>=1.8,<2",
+]
+
+[project.optional-dependencies]
+# Only for the helper commands vis-tree and pca-variance-plot.
+extras = ["matplotlib", "ete3"]
+test = ["pytest"]
+
+[project.scripts]
+phyloai = "phyloai.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/KulyaNikita/PhyloAI"
+
+[tool.setuptools.dynamic]
+version = { attr = "phyloai.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+phyloai = ["data/*.SHA256SUMS"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.ruff]
-extend-select = ["I"]
 line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I"]
