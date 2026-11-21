@@ -6,8 +6,10 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+.pytest_cache/
+.ruff_cache/
+# Models and tools that PhyloAI 1.x put into the source folder.
 /PolyMoSim/
 /ModelDetector.h5
 /PhyloAI-TA-LA-Kaggle/
 /PhyloAI-Fisher-Kaggle/
-/quartet-pattern-counter-v.1.7.1/quartet-pattern-counter
