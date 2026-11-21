@@ -75,7 +75,7 @@ Run the tests with `pytest`.
 
 PhyloAI also installs with pip (`pip install .`), but QPC and the external programs are only available from conda.
 
-### Upgrading from PhyloAI 1.x
+### Upgrading from PhyloAI 1.0.0
 
 The scripts `run_phyloai.py`, `simulate_training_data.py`, `train_phyloai.py`,
 `download_protein_models.py` and `recode_aa_frequencies_6state.py`
