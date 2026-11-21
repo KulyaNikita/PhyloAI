@@ -17,7 +17,8 @@ jobs:
       run:
         shell: bash -el {0}  # Login shell, so the conda environment is active.
     env:
-      PHYLOAI_DATA: ${{ github.workspace }}/../phyloai-data
+      # Inside the checkout: actions/cache does not save paths that contain '..'.
+      PHYLOAI_DATA: ${{ github.workspace }}/.phyloai-data
 
     steps:
       - uses: actions/checkout@v5
