@@ -8,6 +8,8 @@ build/
 dist/
 .pytest_cache/
 .ruff_cache/
+# Models downloaded by the CI workflow (PHYLOAI_DATA).
+/.phyloai-data/
 # Models and tools that PhyloAI 1.x put into the source folder.
 /PolyMoSim/
 /ModelDetector.h5
