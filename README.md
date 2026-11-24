@@ -43,6 +43,13 @@ This installs PhyloAI with [Quartet Pattern Counter (QPC)](https://github.com/cm
 [QFM-FI](https://github.com/sharmin-mim/qfm_java), [PolyMoSim](https://github.com/cmayer/PolyMoSim),
 Java and TensorFlow. `phyloai check` reports what is installed.
 
+**Intel Macs:** the newest TensorFlow for Intel Macs is 2.18. Its `tf-keras` 2.18
+does not work with Python 3.12 or newer, so `phyloai train` fails there (tree reconstruction is not affected). To train networks on an Intel Mac, create the environment with Python 3.11:
+
+```bash
+conda create -n phyloai -c conda-forge -c bioconda phyloai python=3.11
+```
+
 ### Models
 
 The pretrained networks are not part of the package. `phyloai download-models` downloads the 15 Fisher
