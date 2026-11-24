@@ -12,7 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Linux x86-64 and ARM, macOS Apple Silicon and Intel.
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel]
     defaults:
       run:
         shell: bash -el {0}  # Login shell, so the conda environment is active.

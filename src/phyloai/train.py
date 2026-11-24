@@ -129,6 +129,40 @@ def use_keras2():
     os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 
+def fix_tf_keras_seeds(force=False):
+    """Let tf-keras <2.19 create random seeds on Python >=3.12.
+
+    tf-keras up to 2.18 draws seeds with random.randint(1, 1e9), and Python 3.12 no longer accepts the
+    float 1e9, so building any layer fails with "TypeError: 'float' object cannot be interpreted as an
+    integer". tf-keras 2.19 uses int(1e9). conda-forge has no TensorFlow newer than 2.18 for Intel Macs,
+    so there the environment gets tf-keras 2.18; this replaces its two seed functions with the 2.19 ones.
+    Returns True if they were replaced.
+    """
+    import sys
+    from importlib import metadata
+    try:
+        version = tuple(int(part) for part in metadata.version("tf-keras").split(".")[:2])
+    except (metadata.PackageNotFoundError, ValueError):
+        return False
+    if not force and (version >= (2, 19) or sys.version_info < (3, 12)):
+        return False
+    import random
+
+    from tf_keras.src import backend
+    from tf_keras.src.utils import tf_utils
+
+    def get_random_seed():
+        generator = getattr(backend._SEED_GENERATOR, "generator", None)
+        return (generator or random).randint(1, int(1e9))
+
+    def create_seed(self, user_specified_seed):
+        return get_random_seed() if user_specified_seed is None else user_specified_seed
+
+    tf_utils.get_random_seed = get_random_seed
+    backend.RandomGenerator._create_seed = create_seed
+    return True
+
+
 def main(argv=None, prog=None):
     args = arguments(argv, prog)
     # Thread limits must be set before numpy and TensorFlow are imported.
@@ -136,6 +170,8 @@ def main(argv=None, prog=None):
                      "BLIS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
         os.environ[variable] = str(args.threads)
     use_keras2()
+    if os.environ.get("TF_USE_LEGACY_KERAS") == "1":
+        fix_tf_keras_seeds()
     from phyloai import _training
     _training.args = args
     _training.main()
